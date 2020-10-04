@@ -14,6 +14,6 @@ class WhichCommand: PackageCommand {
 
     override func execute(package: PackageReference) throws {
         let executablePath = try mint.getExecutablePath(package: package, executable: executable)
-        mint.standardOut.print(executablePath.absolute().string)
+        print(executablePath.absolute().string)
     }
 }
