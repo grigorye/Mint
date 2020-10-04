@@ -103,13 +103,13 @@ public class Mint {
     @discardableResult
     public func listPackages() throws -> [String: [String]] {
         guard packagesPath.exists else {
-            output("No mint packages installed")
+            errorOutput("No mint packages installed")
             return [:]
         }
 
         let metadata = try readMetadata()
         let cache = try Cache(path: packagesPath, metadata: metadata, linkedExecutables: getLinkedExecutables())
-        output("Installed mint packages:\n\(cache.list)")
+        errorOutput("Installed mint packages:\n\(cache.list)")
 
         return cache.packages.reduce(into: [:]) { result, cache in
             result[cache.gitRepo] = cache.versionDirs.map { $0.version }
@@ -129,7 +129,7 @@ public class Mint {
                 package.version = mintFilePackage.version
                 package.repo = mintFilePackage.repo
                 if verbose {
-                    output("Using \(package.repo) \(package.version) from Mintfile.")
+                    errorOutput("Using \(package.repo) \(package.version) from Mintfile.")
                 }
             }
         }
@@ -156,7 +156,7 @@ public class Mint {
         // resolve latest version from git repo
         if package.version.isEmpty {
             // we don't have a specific version, let's get the latest tag
-            output("Finding latest version of \(package.name)")
+            errorOutput("Finding latest version of \(package.name)")
             do {
                 let tagOutput = try Task.capture(bash: "git ls-remote --tags --refs \(package.gitPath)")
 
@@ -204,7 +204,7 @@ public class Mint {
         let packagePath = try getPackagePath(for: package, with: &arguments, executable: executable)
 
         if verbose || installed || resolvedVersionRemotely {
-            output("Running \(packagePath.executable ?? "") \(package.version)...")
+            errorOutput("Running \(packagePath.executable ?? "") \(package.version)...")
         }
 
         if runAsNewProcess {
@@ -280,7 +280,7 @@ public class Mint {
 
         if !force, isInstalled {
             if !beforeOtherCommand || verbose {
-                output("\(packagePath.commandVersion) already installed".green)
+                errorOutput("\(packagePath.commandVersion) already installed".green)
             }
             if link {
                 if let executable = executable {
@@ -351,7 +351,7 @@ public class Mint {
             }
             let destinationPackagePath = PackagePath(path: packagesPath, package: package, executable: executable)
             if verbose {
-                standardOut.print("Copying \(executablePath.string) to \(destinationPackagePath.executablePath)")
+                standardError.print("Copying \(executablePath.string) to \(destinationPackagePath.executablePath)")
             }
             // copy using shell instead of FileManager via PathKit because it removes executable permissions on Linux
             try Task.run("cp", executablePath.string, destinationPackagePath.executablePath.string)
@@ -363,7 +363,7 @@ public class Mint {
             let resources = resourcesString.components(separatedBy: "\n")
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty }
-            output("Copying resources for \(spmPackage.name): \(resources.joined(separator: ", ")) ...")
+            errorOutput("Copying resources for \(spmPackage.name): \(resources.joined(separator: ", ")) ...")
             for resource in resources {
                 let resourcePath = packageCheckoutPath + resource
                 if resourcePath.exists {
@@ -371,14 +371,14 @@ public class Mint {
                     let dest = packagePath.installPath + filename
                     try Task.run(bash: "cp -R \"\(resourcePath)\" \"\(dest)\"")
                 } else {
-                    output("resource \(resource) doesn't exist".yellow)
+                    errorOutput("resource \(resource) doesn't exist".yellow)
                 }
             }
         }
 
         try addPackage(git: package.gitPath, path: packagePath.packagePath)
 
-        output("Installed \(package.name) \(package.version)".green)
+        errorOutput("Installed \(package.name) \(package.version)".green)
         try? packageCheckoutPath.delete()
 
         if link {
@@ -395,7 +395,7 @@ public class Mint {
     }
 
     private func runPackageCommand(name: String, command: String, directory: Path, stdOutOnError: Bool = false, error mintError: MintError) throws {
-        output(name)
+        errorOutput(name)
         do {
             if verbose {
                 try Task.run(bash: command, directory: directory.string)
@@ -448,7 +448,7 @@ public class Mint {
             confirmation += ", replacing version \(previousVersion)"
         }
 
-        output(confirmation.green)
+        errorOutput(confirmation.green)
     }
 
     public func bootstrap(link: Bool = false) throws {
@@ -463,7 +463,7 @@ public class Mint {
         let packageCount = "\(mintFile.packages.count) \(mintFile.packages.count == 1 ? "package" : "packages")"
 
         if verbose {
-            output("Found \(packageCount) in \(mintFilePath.string)")
+            errorOutput("Found \(packageCount) in \(mintFilePath.string)")
         }
         var installCount = 0
         for package in mintFile.packages {
@@ -473,9 +473,9 @@ public class Mint {
             }
         }
         if installCount == 0 {
-            output("\(packageCount) up to date".green)
+            errorOutput("\(packageCount) up to date".green)
         } else {
-            output("Installed \(installCount)/\(packageCount)".green)
+            errorOutput("Installed \(installCount)/\(packageCount)".green)
         }
     }
 
@@ -500,7 +500,7 @@ public class Mint {
             package = packages.first { $0.gitRepo == option }!
         }
         try package.path.delete()
-        output("\(package.name) was uninstalled")
+        errorOutput("\(package.name) was uninstalled")
 
         // remove metadata
         metadata.packages[package.gitRepo] = nil
