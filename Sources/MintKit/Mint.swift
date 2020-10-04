@@ -351,7 +351,7 @@ public class Mint {
             }
             let destinationPackagePath = PackagePath(path: packagesPath, package: package, executable: executable)
             if verbose {
-                standardError.print("Copying \(executablePath.string) to \(destinationPackagePath.executablePath)")
+                errorOutput("Copying \(executablePath.string) to \(destinationPackagePath.executablePath)")
             }
             // copy using shell instead of FileManager via PathKit because it removes executable permissions on Linux
             try Task.run("cp", executablePath.string, destinationPackagePath.executablePath.string)
