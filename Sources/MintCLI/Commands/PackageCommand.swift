@@ -26,7 +26,7 @@ class PackageCommand: MintfileCommand {
 
     override func execute() throws {
         if silent {
-            mint.standardOut = WriteStream.null
+            mint.standardError = WriteStream.null
         }
 
         try super.execute()
